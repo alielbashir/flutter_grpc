@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:grpc/grpc.dart';
+import 'package:flutter_grpc/generated/helloworld.pbgrpc.dart';
+
+/// Sets up greeter service connection as defined in helloworld.proto
+GreeterClient setupGreeterService(String ipAddress, int port) {
+  final channel = ClientChannel(
+    ipAddress,
+    port: port,
+    options: const ChannelOptions(credentials: ChannelCredentials.insecure()),
+  );
+  final stub = GreeterClient(channel);
+  return stub;
+}
 
 void main() {
-  runApp(const MyApp());
+  final greeterStub = setupGreeterService('localhost', 5001);
+  runApp(MyApp(greeterStub: greeterStub));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  final GreeterClient greeterStub;
+
+  const MyApp({required this.greeterStub, Key? key}) : super(key: key);
 
   // This widget is the root of your application.
   @override
@@ -24,13 +40,15 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home:
+          MyHomePage(title: 'Flutter Demo Home Page', greeterStub: greeterStub),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+  const MyHomePage({required this.greeterStub, Key? key, required this.title})
+      : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -42,22 +60,26 @@ class MyHomePage extends StatefulWidget {
   // always marked "final".
 
   final String title;
+  final GreeterClient greeterStub;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  String message = "";
 
-  void _incrementCounter() {
+  void _incrementCounter() async {
+    // call greeter service
+    final response =
+        await widget.greeterStub.sayHello(HelloRequest(name: 'Buğra'));
     setState(() {
       // This call to setState tells the Flutter framework that something has
       // changed in this State, which causes it to rerun the build method below
       // so that the display can reflect the updated values. If we changed
       // _counter without calling setState(), then the build method would not be
       // called again, and so nothing would appear to happen.
-      _counter++;
+      message = response.message;
     });
   }
 
@@ -99,7 +121,7 @@ class _MyHomePageState extends State<MyHomePage> {
               'You have pushed the button this many times:',
             ),
             Text(
-              '$_counter',
+              message,
               style: Theme.of(context).textTheme.headline4,
             ),
           ],
