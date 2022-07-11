@@ -39,8 +39,9 @@ jobs:
       - name: Build
         run: |
           flutter build windows --release
-          Compress-Archive .\build\windows\runner\Release\ flutter_grpc-windowsx64-0-1-0.zip
+          Compress-Archive .\build\windows\runner\Release\ release.zip
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: ncipollo/release-action@v1
         with:
-          files: flutter_grpc-windowsx64-0-1-0.zip
+          artifacts: "release.zip"
+          token: ${{ secrets.GITHUB_TOKEN }}
